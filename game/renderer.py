@@ -2,9 +2,9 @@ import pygame
 import os
 from game.engine import Engine
 
-WIDTH = 800
-HEIGHT = 400
-GROUND_Y = 300
+WIDTH = 1280
+HEIGHT = 720
+
 
 class Renderer:
     def __init__(self):
@@ -33,9 +33,10 @@ class Renderer:
         # Scale assets
         self.bg = pygame.transform.scale(self.bg, (WIDTH, HEIGHT))
         self.player = pygame.transform.scale(self.player, (40, 40))
-        self.ground = pygame.transform.scale(self.ground, (WIDTH, 40))
+        self.ground = pygame.transform.scale(self.ground, (256, 256))
 
         self.rotation = 0
+        self.ground_scroll = 0
 
     def draw(self):
         # 🎯 Scrolling background
@@ -43,17 +44,25 @@ class Renderer:
         self.screen.blit(self.bg, (bg_x, 0))
         self.screen.blit(self.bg, (bg_x + WIDTH, 0))
 
+        # 🎯 Ground position (aligned to bottom)
+        ground_y = HEIGHT - self.ground.get_height()
+
+        # 🎯 Ground scrolling (synced with engine)
+        self.ground_scroll = self.engine.x % self.ground.get_width()
+        ground_width = self.ground.get_width()
+
+        for i in range(0, WIDTH // ground_width + 3):
+            x = i * ground_width - self.ground_scroll
+            self.screen.blit(self.ground, (x, ground_y))
+
         # 🎯 Player rotation (Geometry Dash feel)
         self.rotation += 5
         rotated = pygame.transform.rotate(self.player, self.rotation)
 
-        player_y = GROUND_Y - self.engine.player.y - 40
+        player_y = ground_y - self.engine.player.y - 40
         self.screen.blit(rotated, (100, player_y))
 
-        # 🎯 Ground
-        self.screen.blit(self.ground, (0, GROUND_Y + 20))
-
-        # 🔺 Spikes (keep your old ones for now)
+        # 🔺 Spikes (aligned with new ground)
         for spike in self.engine.level.spikes:
             screen_x = spike.x - self.engine.x + 100
             if 0 < screen_x < WIDTH:
@@ -61,9 +70,9 @@ class Renderer:
                     self.screen,
                     (255, 0, 0),
                     [
-                        (screen_x, GROUND_Y + 20),
-                        (screen_x + 10, GROUND_Y),
-                        (screen_x + 20, GROUND_Y + 20),
+                        (screen_x, ground_y),
+                        (screen_x + 10, ground_y - 20),
+                        (screen_x + 20, ground_y),
                     ],
                 )
 
